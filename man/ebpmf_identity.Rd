@@ -9,6 +9,8 @@ ebpmf_identity(
   K,
   lib_size = NULL,
   init = "fasttopics",
+  update_L = 1:K,
+  update_F = 1:K,
   maxiter = 50,
   maxiter_init = 100,
   tol = 0.001,
@@ -28,6 +30,10 @@ ebpmf_identity(
 \item{K}{number of factors/ranks}
 
 \item{init}{initialization methods, default is 'fasttopics'; or provide init as a list with L_init, and F_init.}
+
+\item{update_L}{Which columns of L to update.}
+
+\item{update_F}{Which columns of F to update.}
 
 \item{maxiter, maxiter_init}{maximum iterations}
 

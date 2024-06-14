@@ -20,7 +20,6 @@ ebpmf_identity_init = function(X,
     F_init = init$F_init
     cat('F_init should be the EF from ebpmf_identity fit...')
     cat('\n')
-
     if(is.null(L_init)&!is.null(F_init)){
       init_fasttopic = init_poisson_nmf(X,F=F_init,init.method='random')
       init_fit = fit_poisson_nmf(X,numiter = maxiter_init,fit0 = init_fasttopic)
@@ -78,17 +77,21 @@ ebpmf_identity_init = function(X,
   # ratio = adjLF(L_init,F_init)
   # L_init = ratio$L_init
   # F_init = ratio$F_init
-  ratio = poisson_to_libsize(F_init,L_init,lib_size)
-  L_init = ratio$L
-  F_init = ratio$FF
 
+  # I commented out these lines to make sure that L is unchanged when
+  # it is requested by the user not to update one or more columns of L.
+  # -Peter
+  #
+  #   ratio = poisson_to_libsize(F_init,L_init,lib_size)
+  #   L_init = ratio$L
+  #   F_init = ratio$FF
+  #
+  
   gl = list()
   gf = list()
 
   ql = list(El = L_init, Elogl = log(L_init+1e-8))
   qf = list(Ef = F_init, Elogf = log(F_init+1e-8))
-
-
 
   return(list(ql=ql,
               qf=qf,

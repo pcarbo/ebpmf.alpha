@@ -12,6 +12,8 @@ stm_update_rank1(
   ebpm.fn.f,
   res,
   fix_F,
+  update_L,
+  update_F,
   smooth_F,
   ebps_control
 )

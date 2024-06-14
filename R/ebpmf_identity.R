@@ -3,6 +3,8 @@
 #'@param X count matrix
 #'@param K number of factors/ranks
 #'@param init initialization methods, default is 'fasttopics'; or provide init as a list with L_init, and F_init.
+#'@param update_L Which columns of L to update.
+#'@param update_F Which columns of F to update.
 #'@param maxiter,maxiter_init maximum iterations
 #'@param tol stop criteria
 #'@param ebpm.fn specify functions to use for solving the poisson subproblems
@@ -39,6 +41,8 @@
 ebpmf_identity = function(X,K,
                           lib_size = NULL,
                           init = 'fasttopics',
+                          update_L = 1:K,
+                          update_F = 1:K,
                           maxiter=50,
                           maxiter_init = 100,
                           tol=1e-3,
@@ -128,8 +132,12 @@ ebpmf_identity = function(X,K,
   for(iter in 1:maxiter){
 
     for(k in 1:K){
-      Ez = calc_EZ(x, alpha[,k])
-      res = stm_update_rank1(Ez$rs,Ez$cs,k,ebpm.fn.l,ebpm.fn.f,res,fix_F,smooth_F,smooth_control)
+      if (is.element(k,update_L) | is.element(k,update_F)) {
+        Ez = calc_EZ(x, alpha[,k])
+        res = stm_update_rank1(Ez$rs,Ez$cs,k,ebpm.fn.l,ebpm.fn.f,res,fix_F,
+                               is.element(k,update_L),is.element(k,update_F),
+                               smooth_F,smooth_control)
+      }
     }
     if(smooth_F){
       res$gf$sigma2_trace = rbind(res$gf$sigma2_trace,res$gf$sigma2)
@@ -218,16 +226,17 @@ ebpmf_identity = function(X,K,
   }
   elbo = calc_stm_obj(x,n,p,K,res,non0_idx)
 
-
-  ldf = poisson_to_multinom(res$qf$Ef,res$ql$El)
-  EL = ldf$L
-  EF = ldf$FF
+  # ldf = poisson_to_multinom(res$qf$Ef,res$ql$El)
+  # EL = ldf$L
+  # EF = ldf$FF
+  EL <- res$ql$El
+  EF <- res$qf$Ef
   if(smooth_F){
     EF_smooth = scale_cols(res$qf$Ef_smooth)
   }else{
     EF_smooth = NULL
   }
-
+  
   # if(smooth_F){
   #   ldf = poisson_to_multinom(res$qf$Ef_smooth,res$ql$El)
   # }else{
@@ -237,7 +246,8 @@ ebpmf_identity = function(X,K,
              EF = EF,
              EF_smooth = EF_smooth,
              elbo=elbo,
-             d=ldf$s,
+             # d=ldf$s,
+             d = 1,
              obj_trace=obj,
              res = res,
              run_time = difftime(Sys.time(),start_time,units='auto'))
@@ -292,18 +302,21 @@ calc_H = function(x,s,loglik,pm,pmlog){
 
 #'@title rank 1 update of the model
 
-stm_update_rank1 = function(l_seq,f_seq,k,ebpm.fn.l,ebpm.fn.f,res,fix_F,smooth_F,ebps_control){
+stm_update_rank1 = function (l_seq,f_seq,k,ebpm.fn.l,ebpm.fn.f,res,fix_F,
+                             update_L,update_F,smooth_F,ebps_control){
 
   # update l
   #l_seq = rowSums(Z)
-  l_scale = sum(res$qf$Ef[,k])*res$lib_size
-  fit = ebpm.fn.l(l_seq,l_scale)
-  res$ql$El[,k] = fit$posterior$mean
-  res$ql$Elogl[,k] = fit$posterior$mean_log
-  res$Hl[k] = calc_H(l_seq,l_scale,fit$log_likelihood,fit$posterior$mean,fit$posterior$mean_log)
-  res$gl[[k]] = fit$fitted_g
+  if (update_L) {
+      l_scale = sum(res$qf$Ef[,k])*res$lib_size
+      fit = ebpm.fn.l(l_seq,l_scale)
+      res$ql$El[,k] = fit$posterior$mean
+      res$ql$Elogl[,k] = fit$posterior$mean_log
+      res$Hl[k] = calc_H(l_seq,l_scale,fit$log_likelihood,fit$posterior$mean,fit$posterior$mean_log)
+      res$gl[[k]] = fit$fitted_g
+  }
 
-  if(!fix_F){
+  if (update_F & !fix_F) {
     # update f
     #f_seq = colSums(Z)
     f_scale = sum(res$lib_size*res$ql$El[,k])
@@ -357,13 +370,8 @@ stm_update_rank1 = function(l_seq,f_seq,k,ebpm.fn.l,ebpm.fn.f,res,fix_F,smooth_F
     res$Hf[k] = calc_H(f_seq,f_scale,fit$log_likelihood,fit$posterior$mean,fit$posterior$mean_log)
 
   }
-
   return(res)
-
 }
-
-
-
 
 #' #'@title Default parameters of ebpm
 #' #'@export
