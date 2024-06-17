@@ -232,7 +232,8 @@ ebpmf_identity = function(X,K,
   EL <- res$ql$El
   EF <- res$qf$Ef
   if(smooth_F){
-    EF_smooth = scale_cols(res$qf$Ef_smooth)
+    EF_smooth <- res$qf$Ef_smooth
+    # EF_smooth = scale_cols(res$qf$Ef_smooth)
   }else{
     EF_smooth = NULL
   }
